@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Wiki Home</title>
+<link href="static/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="static/jquery.js"></script>
+<script>
+$(function(){
+	$("form.create-wiki").submit(function(e) {
+        e.preventDefault();
+/*		cStop = false;
+		$(this).find('input[type="text"]').each(function(index, element) {
+            switch($(this).attr('name')){
+				case 'title':
+					if($(this).val().length < 2 && $(this).val().length > 30)
+					break;
+			}
+        });
+		if(cStop) return false;
+		if($(this).find('input[name="title"]').val().length < 2 && $(this).find('input[name="title"]').val().length > 30){
+			alert();
+		}*/
+		$.post('save_wiki',$(this).serialize(),function(data){
+			//alert(data);
+			var json = $.parseJSON(data);
+			if(json.error == 'true'){
+				alert(json.message);
+				if(json.element) $("form.create-wiki input[name='"+json.element+"'], form.create-wiki textarea[name='"+json.element+"']").focus();
+			}
+			else if (json.error == 'false'){
+				alert(json.message);
+			}
+		});
+    });
+});
+</script>
+</head>
+<body>
+<div class="inner">
+    <header>
+        <h1>Openlabs Wiki</h1>
+    </header>
+    <article>
+    <h2>Create Wiki</h2>
+    	<form method="post" class="create-wiki">{% csrf_token %}
+            Title:<br />
+        	<input type="text" name="title" maxlength="30" /><br />
+            Content:<br />
+            <textarea  rows="20" name="content"></textarea><br />
+            Comment:<br />
+            <input type="text" name="comment" /><br />
+            Visibility: <label><input type="radio" checked="checked" name="visibility" value="PB" /> Public</label> <label><input type="radio" name="visibility" value="PR" /> Private</label><br />
+            <input type="submit" name="action" value="Save" /><!--<input type="submit" name="action" value="Preview" />-->
+        </form>
+    </article>
+</div>
+<div class="popback">
+<div class="notify"></div>
+</div>
+</body>
+</html>
