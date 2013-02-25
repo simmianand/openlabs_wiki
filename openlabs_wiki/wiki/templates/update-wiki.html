@@ -3,13 +3,13 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Wiki Home</title>
-<link href="static/style.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="static/jquery.js"></script>
+<link href="../../static/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="../../static/jquery.js"></script>
 <script>
 $(function(){
 	$("form.create-wiki").submit(function(e) {
         e.preventDefault();
-		$.post('save_wiki',$(this).serialize(),function(data){
+		$.post('../_save',$(this).serialize(),function(data){
 			//alert(data);
 			var json = $.parseJSON(data);
 			if(json.error == 'true'){
@@ -17,21 +17,34 @@ $(function(){
 				if(json.element) $("form.create-wiki input[name='"+json.element+"'], form.create-wiki textarea[name='"+json.element+"']").focus();
 			}
 			else if (json.error == 'false'){
-				alert(json.message);
+				location.href = '.';
 			}
 		});
     });
 	$("input[value='{{ wiki_type }}']").attr("checked","checked");
+	$("input[value='Delete']").click(function(e) {
+		e.preventDefault();
+		$.get('_delete',"wiki_id={{ wiki_id }}",function(data){
+			var json = $.parseJSON(data);
+			if(json.error == 'true'){
+				alert(json.message);
+				location.href = '../_pages';
+			}
+			else if (json.error == 'false'){
+				location.href = '../_pages';
+			}
+		});
+    	});
 });
 </script>
 </head>
 <body>
 <div class="inner">
     <header>
-        <h1>Openlabs Wiki</h1>
+			<h1><img src="../../static/logo.png" /></h1>
     </header>
     <article>
-    <h2>Create Wiki</h2>
+    <h2>Update Wiki</h2>
     	<form method="post" class="create-wiki">{% csrf_token %}
         	<input type="hidden" name="wiki_id" value="{{ wiki_id }}" />
             Title:<br />
@@ -41,7 +54,7 @@ $(function(){
             Comment:<br />
             <input type="text" name="comment" value="{{ wiki_comment }}" /><br />
             Visibility: <label><input type="radio" name="visibility" value="PB" /> Public</label> <label><input type="radio" name="visibility" value="PR" /> Private</label><br />
-            <input type="submit" name="action" value="Save" /><!--<input type="submit" name="action" value="Preview" />-->
+            <input type="submit" name="action" value="Save" /> <a class="button" href=".">Discard</a> <input type="button" value="Delete" />
         </form>
     </article>
 </div>

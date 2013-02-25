@@ -1,0 +1,26 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{{ wiki_title }}</title>
+<link href="../../static/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="../../static/jquery.js"></script>
+</head>
+<body>
+<div class="inner">
+    <header>
+			<h1><img src="../../static/logo.png" /></h1>
+    </header>
+    <article class="wiki">
+    <h2>{{ wiki_title }}</h2>
+    <div align="right"><a class="button" href="../_create">New</a><a class="button" href="../_pages">Pages</a><a class="button" href="_update">Edit</a><a class="button" href="_history">History</a></div>
+    <div class="clear"></div>
+	{{ wiki_content|safe|capfirst }}
+    </article>
+    <span class="wiki">Last edited by {{ user }}, {{ time }}</span>
+</div>
+<div class="popback">
+<div class="notify"></div>
+</div>
+</body>
+</html>
