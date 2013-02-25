@@ -17,6 +17,26 @@ from django.db import connection, transaction
 
 from wiki.models import wiki, wiki_count
 
+def error404():
+    return render_to_response('404.html')
+
+
+def error403():
+    return render_to_response('403.html')
+
+
+def login_check(request):
+    """Check if user is logged in or not
+
+    :param request: Fetch SESSION variables
+    :return: True if user logged In, False if not.
+    """
+    #request.session['user'] = 'openlabs'
+    if 'user' in request.session:
+        return True
+    else:
+        return False
+
 
 def fwd_home(request):
     """Forward Url to Home-wiki.
@@ -42,6 +62,8 @@ def create_wiki(request):
     :param request: No Use.
     :return: Render create-wiki.html template
     """
+    if not login_check(request):
+        return error403()
     csrf_obj = {}
     csrf_obj.update(csrf(request))
     return render_to_response("create-wiki.html", csrf_obj)
@@ -104,6 +126,8 @@ def update_wiki(request, title):
     :param title: To Map to wiki.
     :return: Render update-wiki.html.
     """
+    if not login_check(request):
+        return error403()
     try:
         last_wiki = wiki.objects.raw("SELECT * FROM wiki_wiki WHERE \
             UPPER(title) = UPPER('"+title+"') ORDER BY pub_date \
@@ -146,6 +170,8 @@ def save_wiki(request):
     :param request: Read user input from ajax
     :return: json message with error, message [, element] fields.
     """
+    if not login_check(request):
+        return error403()
     if request.method is not 'POST':
         try:
             title = request.POST['title']
@@ -215,6 +241,8 @@ def delete_wiki(request, title):
     :param title: no use.
     :return: json string with error, message
     """
+    if not login_check(request):
+        return error403()
     if 'wiki_id' in request.GET and title.lower() != "home":
         try:
             cursor = connection.cursor()
@@ -243,6 +271,8 @@ def history_wiki(request, title):
     :param request: no use.
     :return: render history-wiki.html if found wiki, else print error.
     """
+    if not login_check(request):
+        return error403()
     try:
         wiki_history = wiki.objects.raw("SELECT * FROM wiki_wiki WHERE \
             UPPER(title) = UPPER('"+title+"') ORDER BY pub_date DESC")
@@ -263,6 +293,8 @@ def history_show_wiki(request, title, history_id):
     :param history_id: ID of history.
     :return: Show previous wiki version if wiki exist. Else 'error'
     """
+    if not login_check(request):
+        return error403()
     try:
         show_wiki = wiki.objects.raw("SELECT * FROM wiki_wiki WHERE \
         id = "+history_id)[0]
@@ -286,6 +318,8 @@ def compare_wiki(request, title):
     :param request: get wiki_ids from user
     :return: render compare-wiki.html if wiki exist else error.
     """
+    if not login_check(request):
+        return error403()
     if 'wiki1' in request.POST:
         diff = difflib.HtmlDiff()
         diff = difflib.Differ()
