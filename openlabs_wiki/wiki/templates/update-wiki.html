@@ -9,7 +9,7 @@
 $(function(){
 	$("form.create-wiki").submit(function(e) {
         e.preventDefault();
-		$.post('../_save',$(this).serialize(),function(data){
+		$.post('../_save-update',$(this).serialize(),function(data){
 			//alert(data);
 			var json = $.parseJSON(data);
 			if(json.error == 'true'){

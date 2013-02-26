@@ -16,8 +16,11 @@
     <h2>Wiki Pages</h2>
     <div align="right"><a class="button" href="_create">New Page</a></div>
     	<ul class="list-wiki">
-        {% for l in wiki_list %}
-        	<li><a href="{{ l.1|lower }}">{{ l.1 }}</a></li>
+        {% for l in pub_wiki_list %}
+        	<li><a href="{{ l.0|lower }}">{{ l.1 }}</a></li>
+        {% endfor %}
+        {% for l in pri_wiki_list %}
+        	<li><a href="{{ l.0|lower }}">{{ l.1 }} <span>[Private]</span></a></li>
         {% endfor %}
         </ul>
     </article>

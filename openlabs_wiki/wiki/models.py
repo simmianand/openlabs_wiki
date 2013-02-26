@@ -7,25 +7,27 @@
 """
 from django.db import models
 
-# Create your models here.
 
-TYPE_CHOICES = (
-    ('PR','Private'),
-    ('PB','Public')
-)
+class Wiki(models.Model):
+    """Map wikis to Wiki_History
+    """
+    link = models.CharField(max_length=50, primary_key=True)
+    user = models.CharField(max_length=30)
+    wiki_type = models.CharField(max_length=2)
+    active_wiki = models.IntegerField()
 
-class wiki_count(models.Model):
-    lastid = models.IntegerField()
 
-
-class wiki(models.Model):
-    wiki_id = models.IntegerField()
-    title = models.CharField(max_length=30)
+class WikiHistory(models.Model):
+    """Store wiki content
+    """
+    link = models.ForeignKey(Wiki)
+    title = models.CharField(max_length=50)
     content = models.TextField()
     comment = models.TextField()
     pub_date = models.DateTimeField('date published')
-    wiki_type = models.CharField(max_length=2, choices=TYPE_CHOICES)
 
 
-class media(models.Model):
+class Media(models.Model):
+    """Store Images for wiki
+    """
     path = models.CharField(max_length=50)

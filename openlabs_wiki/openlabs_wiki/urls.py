@@ -1,7 +1,5 @@
 from django.conf.urls import patterns, include, url
-from wiki.views import fwd_home, create_wiki, save_wiki, update_wiki, \
-    delete_wiki, history_wiki, history_show_wiki, compare_wiki,\
-    list_wiki, show_wiki, login
+from wiki.views import *
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -13,6 +11,7 @@ urlpatterns = patterns(
     url(r'^wiki/$', fwd_home),
     url(r'^wiki/_create$', create_wiki),
     url(r'^wiki/_save$', save_wiki),
+    url(r'^wiki/_save-update$', save_update_wiki),
     url(r'^wiki/login/$', login),
     url(r'^wiki/(.*)/_update$', update_wiki),
     url(r'^wiki/(.*)/_delete$', delete_wiki),
