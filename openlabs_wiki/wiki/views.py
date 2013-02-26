@@ -31,7 +31,7 @@ def login_check(request):
     :param request: Fetch SESSION variables
     :return: True if user logged In, False if not.
     """
-    #request.session['user'] = 'openlabs'
+    request.session['user'] = 'openlabs'
     if 'user' in request.session:
         return True
     else:
