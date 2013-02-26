@@ -19,10 +19,14 @@ from wiki.models import *
 
 
 def error404():
+    """ Render 404 Request
+    """
     return render_to_response('404.html')
 
 
 def error403():
+    """ Render 403 Request
+    """
     return render_to_response('403.html')
 
 
@@ -38,12 +42,14 @@ def login_check(request):
     else:
         return False
 
+
 def logout(request):
     try:
         del request.session['username']
         return 1
     except:
         return 0
+
 
 def fwd_home(request):
     """Forward Url to Home-wiki.
@@ -150,7 +156,8 @@ def update_wiki(request, title):
         user = ''
 
     try:
-        last_wiki = Wiki.objects.raw("SELECT * FROM wiki_wiki, wiki_wikihistory \
+        last_wiki = Wiki.objects.raw("SELECT * FROM wiki_wiki, \
+            wiki_wikihistory \
             WHERE wiki_wiki.active_wiki = wiki_wikihistory.id AND \
             LOWER(wiki_wiki.link) = '"+title+"' AND \
             wiki_wiki.user = '"+user+"'")[0]
@@ -174,12 +181,13 @@ def conv_title(title):
         :param title: title string to check.
         :return: False or valid title string.
     """
+    title = title.lower()
     try:
         last_wiki = Wiki.objects.get(link=title)
-        if last_wiki.len == 1:
+        if last_wiki.link:
             return False
     except:
-        return title.lower()
+        return title
 
 
 def update_wiki_check(request):
@@ -252,15 +260,15 @@ def save_wiki(request):
             }')
 
         wiki_obj = Wiki(
-            link = link,
+            link=link,
             wiki_type=wiki_type,
-            user = request.session['username'],
-            active_wiki = 0,
+            user=request.session['username'],
+            active_wiki=0,
         )
         wiki_obj.save()
 
         wiki_history = WikiHistory(
-            link = wiki_obj,
+            link=wiki_obj,
             title=title,
             content=content,
             comment=comment,
@@ -287,7 +295,6 @@ def save_update_wiki(request):
     """
     if not login_check(request):
         return error403()
-    user = request.session['username']
     if request.method is not 'POST' and 'wiki_id' in request.POST:
         try:
             title = request.POST['title']
@@ -339,13 +346,13 @@ def save_update_wiki(request):
                 "element": "title"\
             }')
         wiki_obj = Wiki.objects.get(
-            link = request.POST['wiki_id'],
-            user = request.session['username'],
+            link=request.POST['wiki_id'],
+            user=request.session['username'],
         )
         wiki_obj.wiki_type = wiki_type
         wiki_obj.save()
         wiki_history = WikiHistory(
-            link = wiki_obj,
+            link=wiki_obj,
             title=title,
             content=content,
             comment=comment,
@@ -404,7 +411,10 @@ def history_wiki(request, link):
     if not login_check(request):
         return error403()
     try:
-        wiki_history = Wiki.objects.raw("SELECT wiki_wikihistory.*, wiki_wiki.link FROM wiki_wiki, wiki_wikihistory WHERE link = '"+link+"' AND wiki_wiki.link = wiki_wikihistory.link_id ORDER BY pub_date DESC;")
+        wiki_history = Wiki.objects.raw("SELECT wiki_wikihistory.*, \
+            wiki_wiki.link FROM wiki_wiki, wiki_wikihistory WHERE link = \
+            '"+link+"' AND wiki_wiki.link = wiki_wikihistory.link_id \
+            ORDER BY pub_date DESC;")
         values = {
             'wiki_history_list': wiki_history,
             'title': link,
@@ -426,15 +436,17 @@ def history_show_wiki(request, title, history_id):
     if not login_check(request):
         return error403()
     try:
-        show_wiki = Wiki.objects.raw("SELECT * FROM wiki_wiki WHERE \
-        id = "+history_id)[0]
+        show_wiki = Wiki.objects.raw("SELECT wiki_wikihistory.*, \
+            wiki_wiki.user, wiki_wiki.link FROM wiki_wikihistory, \
+            wiki_wiki WHERE wiki_wikihistory.link_id = wiki_wiki.link AND \
+            wiki_wikihistory.id = "+history_id+";")[0]
         content = markdown.markdown(show_wiki.content, safe_mode=True)
         time = show_wiki.pub_date
         values = {
             "wiki_title": show_wiki.title,
             "wiki_content": content,
             "time": time,
-            "user": 'openlabs',
+            "user": show_wiki.user,
         }
 
         return render_to_response('show-history-wiki.html', values)
@@ -451,13 +463,12 @@ def compare_wiki(request, title):
     if not login_check(request):
         return error403()
     if 'wiki1' in request.POST:
-        diff = difflib.HtmlDiff()
         diff = difflib.Differ()
-        wiki1 = Wiki.objects.get(id=request.POST['wiki1'])
-        wiki2 = Wiki.objects.get(id=request.POST['wiki2'])
+        wiki1 = WikiHistory.objects.get(id=request.POST['wiki1'])
+        wiki2 = WikiHistory.objects.get(id=request.POST['wiki2'])
         values = {
-            'content': list(diff.compare(wiki1.content.split('\n'),
-            wiki2.content.split('\n'))),
+            'content': list(diff.compare(wiki2.content.split('\n'),
+            wiki1.content.split('\n'))),
             'title': title,
         }
         return render_to_response('compare-wiki.html', values)
