@@ -32,7 +32,7 @@ article h2{
 	background:#efefef;
 }
 
-input[type=text], textarea{
+input[type=text], input[type=password], textarea{
 	padding:5px;
 	border-radius:5px;
 	border:#999 solid 1px;

@@ -3,8 +3,8 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Wiki Home</title>
-<link href="../../static/style.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="../../static/jquery.js"></script>
+<link href="/static/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="/static/jquery.js"></script>
 <script>
 $(function(){
 	$("form.create-wiki").submit(function(e) {
@@ -17,7 +17,10 @@ $(function(){
 				if(json.element) $("form.create-wiki input[name='"+json.element+"'], form.create-wiki textarea[name='"+json.element+"']").focus();
 			}
 			else if (json.error == 'false'){
-				location.href = '.';
+				if (json.element != 'none')
+					location.href = '../'+json.element;
+				else
+					location.href = '.';
 			}
 		});
     });
@@ -40,10 +43,7 @@ $(function(){
 </head>
 <body>
 <div class="inner">
-    <header>
-			<h1><img src="../../static/logo.png" /></h1>
-			{% include 'nav.html' %}
-    </header>
+	{% include 'nav.html' %}
     <article>
     <h2>Update Wiki</h2>
     	<form method="post" class="create-wiki">{% csrf_token %}

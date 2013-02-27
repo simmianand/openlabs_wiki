@@ -2,49 +2,46 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>Wiki Home</title>
-<link href="../../static/style.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="../../static/jquery.js"></script>
-<script>
-$(function(){
-	$("form.create-wiki").submit(function(e) {
-        e.preventDefault();
-		$.post('save_wiki',$(this).serialize(),function(data){
-			//alert(data);
-			var json = $.parseJSON(data);
-			if(json.error == 'true'){
-				alert(json.message);
-				if(json.element) $("form.create-wiki input[name='"+json.element+"'], form.create-wiki textarea[name='"+json.element+"']").focus();
-			}
-			else if (json.error == 'false'){
-				alert(json.message);
-			}
-		});
-    });
-});
-</script>
+<title>Login</title>
+<link href="/static/style.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="/static/jquery.js"></script>
 </head>
 <body>
 <div class="inner">
-    <header>
-        <h1><img src="../../static/logo.png" /></h1>
 	{% include 'nav.html' %}
-    </header>
-    <article>
-    	<form method="post" class="create-wiki">{% csrf_token %}
-            Title:<br />
-        	<input type="text" name="title" maxlength="30" /><br />
-            Content:<br />
-            <textarea  rows="20" name="content"></textarea><br />
-            Comment:<br />
-            <input type="text" name="comment" /><br />
-            Visibility: <label><input type="radio" checked="checked" name="visibility" value="PB" /> Public</label> <label><input type="radio" name="visibility" value="PR" /> Private</label><br />
-            <input type="submit" name="action" value="Save" /><!--<input type="submit" name="action" value="Preview" />-->
+    <article class="wiki">
+	<form method="post" action="/login_view">{% csrf_token %}
+{% if invalid == 'login' %}
+    <p align="left">Sorry, that's not a valid username or password</p>
+{% endif %}
+            Username:<br />
+        	<input type="text" name="username" maxlength="30" /><br />
+            Password:<br />
+            <input type="password" name="password" /><br />
+            <input type="submit" name="action" value="Login" /><!--<input type="submit" name="action" value="Preview" />-->
         </form>
+	
+	<form method="post" action="../../add_user">{% csrf_token %}
+{% if invalid == 'register' %}
+    <p align="left">Someone is already using this username. Please pick an other.</p>
+{% elif error %}
+<p> User must be set.</p>
+{% endif %}
+	    Username: <br />
+		<input type="text" name="username" maxlength="30" /><br />
+	    E-mail ID: <br />
+		<input type="text" name="email" maxlength="40" /><br />
+	    Password: <br />
+		<input type="password" name="password" /><br />
+		<input type="submit" name="register" value="Register" />
+	</form>
+
+	</form method="post">
+		{% if invalid2 %}
+                <p align="left">Someone is already using this username. Please pick an other.</p>
+                {% endif %}
+	</form>
     </article>
-</div>
-<div class="popback">
-<div class="notify"></div>
 </div>
 </body>
 </html>

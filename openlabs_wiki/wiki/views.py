@@ -10,13 +10,22 @@ from datetime import datetime
 import markdown
 import difflib
 
+from django.contrib import auth
+from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.core.context_processors import csrf
-from django.db import connection, transaction
+from django.db import connection
 
 from wiki.models import *
 
+USERNAME = ''
+
+def setUser(request):
+    if 'username' in request.session:
+        USERNAME = request.session['username']
+    else:
+        USERNAME = ''
 
 def error404():
     """ Render 404 Request
@@ -36,20 +45,82 @@ def login_check(request):
     :param request: Fetch SESSION variables
     :return: True if user logged In, False if not.
     """
-    request.session['username'] = 'openlabs'
-    if 'user' in request.session:
+    if 'username' in request.session:
         return True
     else:
         return False
 
+# Simmi code start
+
 
 def logout(request):
+    """Logout from the session and send you back to the Login Page
+
+    :param request: No Use.
+    :return: Redirecting Url.
+    """
     try:
         del request.session['username']
-        return 1
     except:
-        return 0
+        pass
+    return render_to_response('logout.html')
 
+
+def add_user(request):
+    """Register users to create Wiki Pages.
+
+    :param request: No Use.
+    :return: Redirecting Url.
+    """
+    try:
+        if request.method == "POST":
+            username = request.POST['username']
+            email = request.POST['email']
+            password = request.POST['password']
+            user = User.objects.create_user(username, email, password)
+            user.save()
+            return HttpResponseRedirect('/wiki/home')
+        else:
+            if user is None:
+                return HttpResponseRedirect('/wiki/login')
+
+    except:
+            return HttpResponseRedirect('/wiki/login/?status=register')
+
+
+def login_view(request):
+    """Forward Url to Home-wiki.
+
+    :param request: No Use.
+    :return: Redirecting Url.
+    """
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = auth.authenticate(username=username, password=password)
+        if user is not None and user.is_active:
+            request.session['username']=username
+            return HttpResponseRedirect('/wiki/home')
+        else:
+            return HttpResponseRedirect('/wiki/login/?status=login')
+
+
+def login(request):
+    """Forward Url to Login-Page.
+
+    :param request: No Use.
+    :return: Redirecting Url.
+    """
+    status = False
+    if 'status' in request.GET:
+        status = request.GET['status']
+    values = {
+        'invalid': status,
+    }
+    values.update(csrf(request))
+    return render_to_response('login.html', values)
+
+# Simmi code over 
 
 def fwd_home(request):
     """Forward Url to Home-wiki.
@@ -58,15 +129,6 @@ def fwd_home(request):
     :return: Redirecting Url.
     """
     return HttpResponseRedirect('/wiki/home')
-
-
-def login(request):
-    """Forward Url to Home-wiki.
-
-    :param request: No Use.
-    :return: Redirecting Url.
-    """
-    return render_to_response('login.html')
 
 
 def create_wiki(request):
@@ -82,6 +144,29 @@ def create_wiki(request):
     return render_to_response("create-wiki.html", csrf_obj)
 
 
+def activate_wiki(request, link, history_id):
+    """Activate history wiki
+    """
+    if not login_check(request):
+        return error403()
+    setUser(request)
+    try:
+        getwiki = WikiHistory.objects.get(
+            link = link,
+            id = history_id,
+        )
+        wiki_obj = Wiki.objects.get(
+            link = link,
+            user = request.session['username'],
+        )
+        wiki_obj.active_wiki = history_id
+        wiki_obj.save()
+        return HttpResponseRedirect('/wiki/'+link)
+    except:
+        raise
+        return HttpResponseRedirect('/wiki/'+link+'/_history')
+
+
 def list_wiki(request):
     """List all wiki pages.
 
@@ -92,14 +177,19 @@ def list_wiki(request):
     pub_cur.execute("SELECT link, title FROM wiki_wiki, wiki_wikihistory \
         WHERE wiki_wiki.active_wiki = wiki_wikihistory.id AND \
         wiki_wiki.wiki_type = 'PB';")
-    pri_cur = connection.cursor()
-    pri_cur.execute("SELECT link, title FROM wiki_wiki, wiki_wikihistory \
-        WHERE wiki_wiki.active_wiki = wiki_wikihistory.id AND \
-        wiki_wiki.user = '"+request.session['username']+"' AND \
-        wiki_wiki.wiki_type = 'PR';")
+
+    try:
+        pri_cur = connection.cursor()
+        pri_cur.execute("SELECT link, title FROM wiki_wiki, wiki_wikihistory \
+            WHERE wiki_wiki.active_wiki = wiki_wikihistory.id AND \
+            wiki_wiki.user = '"+request.session['username']+"' AND \
+            wiki_wiki.wiki_type = 'PR';")
+        pri_cur = pri_cur.fetchall()
+    except:
+        pri_cur = ''
     values = {
         "pub_wiki_list": pub_cur.fetchall(),
-        "pri_wiki_list": pri_cur.fetchall(),
+        "pri_wiki_list": pri_cur,
     }
     return render_to_response('list-wiki.html', values)
 
@@ -181,7 +271,7 @@ def conv_title(title):
         :param title: title string to check.
         :return: False or valid title string.
     """
-    title = title.lower()
+    title = title.lower().replace(" ", "-")
     try:
         last_wiki = Wiki.objects.get(link=title)
         if last_wiki.link:
@@ -193,21 +283,34 @@ def conv_title(title):
 def update_wiki_check(request):
     """Check if update is allowed or not.
 
-    :return: 1 if allowed allowed.
+    :return: 1 if allowed.
              2 if No Change.
+             3 Title already exist
+             4 Wiki not available
     """
+    title = request.POST['title'].lower().replace(" ", "-")
     try:
-        last_wiki = Wiki.objects.raw("SELECT * FROM wiki_wiki WHERE \
-            wiki_id = '"+request.POST['wiki_id']+"' ORDER BY pub_date \
-            DESC LIMIT 1")[0]
+        last_wiki = Wiki.objects.raw("SELECT * FROM wiki_wiki, \
+            wiki_wikihistory \
+            WHERE wiki_wiki.active_wiki = wiki_wikihistory.id AND \
+            LOWER(wiki_wiki.link) = '"+request.POST['wiki_id']+"' AND \
+            wiki_wiki.user = '"+request.session['username']+"'")[0]
+
         if (last_wiki.title == request.POST['title'] and
                 last_wiki.content == request.POST['content']):
-            return 2
-
+            return 2  # All same no change.
         if last_wiki.title == request.POST['title']:
-            return 1
+            return 1  # Title is same as previous one.
+        try:
+            check_wiki = Wiki.objects.get(
+                link=title,
+            )
+            if check_wiki.link:
+                return 3  # Title already exist with some other wiki.
+        except:
+            return 5
     except:
-        return 1
+        return 4  # Wiki not available.
 
 
 def save_wiki(request):
@@ -328,29 +431,32 @@ def save_update_wiki(request):
                 "element": "visibility"\
             }')
 
-        else:
-            link = request.POST['wiki_id']
-#            status = update_wiki_check(request)
-#            if status == 2:
-#                return HttpResponse('{\
-#                    "error": "false",\
-#                    "message": "Wiki Saved",\
-#                    "element": "none"\
-#                }')
-
-        link = conv_title(title)
-        if link is False:
+        status = update_wiki_check(request)
+        if status is 3:
             return HttpResponse('{\
                 "error": "true",\
                 "message": "Title is already used.",\
                 "element": "title"\
             }')
+        elif status is 4:
+            return HttpResponse('{\
+                "error": "true",\
+                "message": "Forbidden",\
+                "element": "title"\
+            }')
+
         wiki_obj = Wiki.objects.get(
             link=request.POST['wiki_id'],
             user=request.session['username'],
         )
         wiki_obj.wiki_type = wiki_type
-        wiki_obj.save()
+        if status == 2:
+            wiki_obj.save()
+            return HttpResponse('{\
+                    "error": "false",\
+                    "message": "Wiki Saved",\
+                    "element": "none"\
+                }')
         wiki_history = WikiHistory(
             link=wiki_obj,
             title=title,
@@ -361,11 +467,20 @@ def save_update_wiki(request):
         wiki_history.save()
         wiki_obj.active_wiki = wiki_history.id
         wiki_obj.save()
-
+        element = 'none'
+        if status is 5:
+            wiki_obj.link = request.POST['title'].lower().replace(" ", "-")
+            wiki_obj.save()
+            WikiHistory.objects.filter(link=request.POST['wiki_id'])\
+                .update(link=wiki_obj)
+            Wiki.objects.filter(
+                link=request.POST['wiki_id'],
+            ).delete()
+            element = request.POST['title'].lower().replace(" ", "-")
         return HttpResponse('{\
                 "error": "false",\
                 "message": "Wiki Saved",\
-                "element": "none"\
+                "element": "'+element+'"\
             }')
     else:
         return HttpResponse('Error')
@@ -382,10 +497,10 @@ def delete_wiki(request, title):
         return error403()
     if 'wiki_id' in request.GET and title.lower() != "home":
         try:
-            cursor = connection.cursor()
-            cursor.execute("DELETE FROM wiki_wiki WHERE \
-                wiki_id = "+request.GET['wiki_id'])
-            transaction.commit_unless_managed()
+            Wiki.objects.filter(
+                link=request.GET['wiki_id'],
+                user=request.session['username'],
+            ).delete()
             return HttpResponse('{\
                 "error": "false",\
                 "message": "deleted"\

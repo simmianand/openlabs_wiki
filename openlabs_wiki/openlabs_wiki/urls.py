@@ -17,9 +17,14 @@ urlpatterns = patterns(
     url(r'^wiki/(.*)/_delete$', delete_wiki),
     url(r'^wiki/(.*)/_history$', history_wiki),
     url(r'^wiki/(.*)/_history/(\d+)/$', history_show_wiki),
+    url(r'^wiki/(.*)/activate/(\d+)/$', activate_wiki),
     url(r'^wiki/(.*)/_compare$', compare_wiki),
     url(r'^wiki/_pages$', list_wiki),
     url(r'^wiki/(.*)/$', show_wiki),
+
+    url(r'^login_view$', login_view),
+    url(r'^add_user$', add_user),
+    url(r'^logout$', logout),
 
     url(r'^admin/', include(admin.site.urls)),
 )
